@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FoodieBot - Food Ordering Assistant</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f1ea;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 30px 10px;
+  }
+  .app {
+    width: 100%;
+    max-width: 480px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 85vh;
+  }
+  header {
+    background: #d84315;
+    color: white;
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  header span { font-weight: 400; font-size: 0.8rem; display: block; opacity: 0.85; }
+  #chat {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fafafa;
+  }
+  .msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.4;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+  }
+  .user { align-self: flex-end; background: #d84315; color: white; border-bottom-right-radius: 4px; }
+  .bot { align-self: flex-start; background: #eee; color: #222; border-bottom-left-radius: 4px; }
+  form {
+    display: flex;
+    border-top: 1px solid #eee;
+    padding: 10px;
+    gap: 8px;
+  }
+  input[type=text] {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 0.95rem;
+  }
+  button {
+    background: #d84315;
+    color: white;
+    border: none;
+    padding: 0 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      FoodieBot
+      <span>Ask about the menu, place an order, or report an issue</span>
+    </header>
+    <div id="chat"></div>
+    <form id="chat-form">
+      <input type="text" id="msg" placeholder="Type a message..." autocomplete="off" required />
+      <button type="submit" id="send-btn">Send</button>
+    </form>
+  </div>
+
+<script>
+const chat = document.getElementById('chat');
+const form = document.getElementById('chat-form');
+const input = document.getElementById('msg');
+const sendBtn = document.getElementById('send-btn');
+const sessionId = crypto.randomUUID();
+
+function addMessage(text, sender) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + sender;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+addMessage("Hi! I'm FoodieBot 🍔 Ask me about the menu, place an order, or tell me about an issue with a past order.", 'bot');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const message = input.value.trim();
+  if (!message) return;
+  addMessage(message, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, session_id: sessionId })
+    });
+    const data = await res.json();
+    if (data.error) {
+      addMessage('Error: ' + data.error, 'bot');
+    } else {
+      addMessage(data.reply, 'bot');
+    }
+  } catch (err) {
+    addMessage('Something went wrong reaching the server.', 'bot');
+  } finally {
+    sendBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
